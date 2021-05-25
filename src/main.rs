@@ -1,4 +1,5 @@
 use structopt::StructOpt;
+use rust_organizer::{get_file_names};
 
 #[derive(StructOpt, Debug)]
 struct Cli {
@@ -7,7 +8,7 @@ struct Cli {
     #[structopt(short = "d", long = "destination", default_value = "Rust_Organizer", parse(from_os_str))] //TODO: change this to include the current date
     destination: std::path::PathBuf,
     #[structopt(short = "e", long = "extension")]
-    extension: String,
+    extension: Vec<String>,
     #[structopt(short = "m", long = "move")]
     move_files: bool,
 }
@@ -15,4 +16,10 @@ struct Cli {
 fn main() {
     let args = Cli::from_args();
     println!("Args: {:?}", args);
+    let mut files = Vec::new();
+    let paths = get_file_names(&args.root, &args.extension, &mut files);
+    // for file in paths {
+    //     println!("{}", file.display());
+    // }
+    println!("num of elements: {}", paths.len());
 }

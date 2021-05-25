@@ -1,5 +1,5 @@
 use structopt::StructOpt;
-use rust_organizer::{get_file_names};
+use rust_organizer::{get_file_names, format_extensions};
 
 #[derive(StructOpt, Debug)]
 struct Cli {
@@ -14,10 +14,10 @@ struct Cli {
 }
 
 fn main() {
-    let args = Cli::from_args();
+    let mut args = Cli::from_args();
     println!("Args: {:?}", args);
     let mut files = Vec::new();
-    let paths = get_file_names(&args.root, &args.extension, &mut files);
+    let paths = get_file_names(&args.root, &mut args.extension, &mut files);
     // for file in paths {
     //     println!("{}", file.display());
     // }

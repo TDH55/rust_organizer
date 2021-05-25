@@ -98,25 +98,36 @@ enum Message {
 }
 
 //TODO: function to check format of extensions -> remove period from beginning
+pub fn format_extensions(exts: &mut Vec<String>) {
+    for i in 0..exts.len() {
+        if exts[i].chars().nth(0).unwrap() == '.' {
+            println!("{}", exts[i]);
+            let mut chars = exts[i].chars();
+            chars.next();
+            exts[i] = chars.as_str().to_owned();
+        }
+    }
+}
 
-//TODO: function to get file paths
-pub fn get_file_names<'a>(origin: &'a std::path::PathBuf, exts: &'a Vec<String>, paths: &'a mut Vec<PathBuf>) -> &'a mut Vec<std::path::PathBuf>{
+//DONE: function to get file paths
+pub fn get_file_names<'a>(origin: &'a std::path::PathBuf, extensions: &'a mut Vec<String>, paths: &'a mut Vec<PathBuf>) -> &'a mut Vec<std::path::PathBuf>{
     assert!(origin.is_dir()); //TODO: clean up error handling
+    format_extensions(extensions);
     for item in fs::read_dir(origin).unwrap() {
         let file = item.unwrap();
         let path = file.path();
         if path.is_dir() {
-            get_file_names(&path, exts, paths);
+            get_file_names(&path, extensions, paths);
 
         } else {
             let ext = path.extension();
             match ext {
                 Some(ext) => {
-                    if exts.contains(&ext.to_str().unwrap().to_string()) {
+                    if extensions.contains(&ext.to_str().unwrap().to_string()) {
                         paths.push(path);
                     }
                 }
-                None => {  }
+                None => {}
             }
         }
     }

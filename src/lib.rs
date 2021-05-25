@@ -1,100 +1,13 @@
 use std::{sync::{Mutex, mpsc, Arc}, thread, usize};
 use std::fs;
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
-pub struct ThreadPool {
-    workers: Vec<Worker>,
-    sender: mpsc::Sender<Message>,
-}
-
-type Job = Box<dyn FnOnce() + Send + 'static>;
-
-impl ThreadPool {
-    /// Create a new ThreadPool.
-    ///
-    /// The size is the number of threads in the pool
-    ///
-    /// # Panics
-    ///
-    /// The 'new function will panic if the size is zero.
-    pub  fn new(size: usize) -> ThreadPool {
-        assert!(size > 0);
-
-        let (sender, reciever) = mpsc::channel();
-
-        let reciever = Arc::new(Mutex::new(reciever));
-
-        let mut workers = Vec::with_capacity(size);
-        for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&reciever)));
-        }
-
-        ThreadPool { workers, sender }
+//TODO: function to verify directories
+pub fn verify_directories(origin: &PathBuf, destination: &PathBuf) {
+    if !destination.is_dir() {
+        fs::create_dir(destination);
     }
-
-    pub fn execute<F>(&self, f: F)
-        where
-            F: FnOnce() + Send + 'static,
-    {
-        let job = Box::new(f);
-        self.sender.send(Message::NewJob(job)).unwrap();
-    }
-}
-
-impl Drop for ThreadPool {
-    fn drop(&mut self) {
-        println!("Sending terminate message to all workers");
-
-        for _ in &self.workers {
-            self.sender.send(Message::Terminate).unwrap();
-        }
-
-        println!("Shutting down all workers");
-
-        for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
-
-            if let Some(thread) = worker.thread.take() {
-                thread.join().unwrap();
-            }
-        }
-    }
-}
-
-struct Worker {
-    id: usize,
-    thread: Option<thread::JoinHandle<()>>,
-}
-
-impl Worker {
-    fn new(id: usize, reciever: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
-        let thread = thread::spawn(move || loop {
-            let message = reciever.lock().unwrap().recv().unwrap();
-
-            match message {
-                Message::NewJob(job) => {
-                    println!("Worker {} got a job; executing.", id);
-
-                    job();
-                }
-                Message::Terminate => {
-                    println!("Worker {} was told to terminate.", id);
-
-                    break;
-                }
-            }
-        });
-        Worker {
-            id,
-            thread: Some(thread),
-        }
-    }
-}
-
-enum Message {
-    NewJob(Job),
-    Terminate,
 }
 
 //TODO: function to check format of extensions -> remove period from beginning
@@ -136,4 +49,23 @@ pub fn get_file_names<'a>(origin: &'a std::path::PathBuf, extensions: &'a mut Ve
 
 fn get_file_extension(path: &std::path::PathBuf) -> &OsStr {
     path.extension().unwrap() //TODO: error handling
+}
+
+pub fn organize_file(path: &std::path::PathBuf, destination: &std::path::PathBuf, move_file: bool) -> std::io::Result<()> {
+    if move_file {
+        println!("Move: {}", path.display());
+    } else {
+        let file_name = path.file_name();
+
+        match file_name {
+            Some(file_name) => {
+                //TODO: add handling if file by name already exists
+                let destination = format!("{}/{}",  destination.display(), file_name.to_str().unwrap());
+                fs::copy(path, &destination)?;
+                println!("Copy: {:?} to {:?}", file_name, destination.to_string());
+            }
+            None => {}
+        }
+    }
+    Ok(())
 }

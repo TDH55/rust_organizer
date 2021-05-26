@@ -2,6 +2,10 @@ use std::{sync::{Mutex, mpsc, Arc}, thread, usize};
 use std::fs;
 use std::ffi::OsStr;
 use std::path::{PathBuf, Path};
+use std::time::SystemTime;
+use chrono;
+use chrono::{TimeZone, DateTime, Date, Local};
+use chrono::offset;
 
 //TODO: function to verify directories
 pub fn verify_directories(origin: &PathBuf, destination: &PathBuf) {
@@ -51,6 +55,7 @@ fn get_file_extension(path: &std::path::PathBuf) -> &OsStr {
     path.extension().unwrap() //TODO: error handling
 }
 
+
 pub fn organize_file(path: &std::path::PathBuf, destination: &std::path::PathBuf, move_file: bool) -> std::io::Result<()> {
     if move_file {
         println!("Move: {}", path.display());
@@ -60,9 +65,17 @@ pub fn organize_file(path: &std::path::PathBuf, destination: &std::path::PathBuf
         match file_name {
             Some(file_name) => {
                 //TODO: add handling if file by name already exists
-                let destination = format!("{}/{}",  destination.display(), file_name.to_str().unwrap());
+                let created_at = path.metadata().unwrap().created().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+                // println!("total: {:?}, sec: {:?}, nano: {:?}, dt: {:?}", created_at, created_at.as_secs(), created_at.subsec_nanos(), chrono::Utc.timestamp(created_at.as_secs() as i64, created_at.subsec_nanos()));
+                let date =  chrono::Utc.timestamp(created_at.as_secs() as i64, created_at.subsec_nanos()).with_timezone(&Local).naive_local();
+                println!("{}", date);
+                // let date = date.naive_local();
+                //TODO: clean up destination so date is after name
+                let destination = PathBuf::from(format!("{}/{}-{}", destination.display(), date, file_name.to_str().unwrap()));
+                // let mut destination = format!("{}/{}",  destination.display(), file_name.to_str().unwrap());
+                // println!("{:?}", path.parent());
                 fs::copy(path, &destination)?;
-                println!("Copy: {:?} to {:?}", file_name, destination.to_string());
+                println!("Copy: {:?} to {:?}", file_name, destination);
             }
             None => {}
         }

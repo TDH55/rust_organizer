@@ -15,7 +15,8 @@ struct Cli {
     move_files: bool,
 }
 
-
+//TODO: add status indicators for users
+//TODO: clean up so main() function logic is simplified
 fn main() {
     let mut args = Cli::from_args();
     let move_file = args.move_files;

@@ -11,8 +11,7 @@ pub fn verify_directories(destination: &PathBuf) {
     }
 }
 
-//TODO: function to check format of extensions -> remove period from beginning
-pub fn format_extensions(exts: &mut Vec<String>) {
+fn format_extensions(exts: &mut Vec<String>) {
     for i in 0..exts.len() {
         if exts[i].chars().nth(0).unwrap() == '.' {
             let mut chars = exts[i].chars();

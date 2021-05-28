@@ -1,11 +1,9 @@
 use structopt::StructOpt;
 use rust_organizer::{get_file_names, organize_file, verify_directories};
 use threadpool::ThreadPool;
-use std::thread;
-use std::time::Duration;
 use std::sync::mpsc;
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug)]
 struct Cli {
     #[structopt(short = "o", long = "origin", default_value = "./", parse(from_os_str))]
     root: std::path::PathBuf,
@@ -23,29 +21,26 @@ fn main() {
     let move_file = args.move_files;
     let destination = args.destination;
     let origin = args.root;
-    verify_directories(&origin, &destination);
+    verify_directories(&destination);
     let mut files = Vec::new();
     let paths = get_file_names(&origin, &mut args.extension, &mut files).to_owned();
-
-    println!("num of elements: {}", paths.len());
 
     let (tx, rc) = mpsc::channel();
     let n_workers = 30;
     let n_jobs = paths.len();
+
     let pool = ThreadPool::new(n_workers);
     for file in paths {
         let tx = tx.clone();
         let destination = destination.clone();
         let move_file = move_file.clone();
         pool.execute(move || {
-            organize_file(&file, &destination, move_file);
+            organize_file(&file, &destination, move_file).unwrap();
             tx.send(()).unwrap();
         })
     }
-    //TODO: fix so program doesnt finish until pool is done
 
-    for i in 0..n_jobs {
-        //TODO: update a progress variable
+    for _ in 0..n_jobs {
         rc.recv().unwrap();
     }
 }

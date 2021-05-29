@@ -1,7 +1,5 @@
 use structopt::StructOpt;
 use rust_organizer::{get_file_names, organize_file, verify_directories};
-use threadpool::ThreadPool;
-use std::sync::mpsc;
 
 #[derive(StructOpt, Debug)]
 struct Cli {
@@ -26,22 +24,22 @@ fn main() {
     let mut files = Vec::new();
     let paths = get_file_names(&origin, &mut args.extension, &mut files).to_owned();
 
-    let (tx, rc) = mpsc::channel();
-    let n_workers = 30;
-    let n_jobs = paths.len();
-
-    let pool = ThreadPool::new(n_workers);
+    // let (tx, rc) = mpsc::channel();
+    // let n_workers = 8;
+    // let n_jobs = paths.len();
+    //
+    // let pool = ThreadPool::new(n_workers);
     for file in paths {
-        let tx = tx.clone();
-        let destination = destination.clone();
-        let move_file = move_file.clone();
-        pool.execute(move || {
-            organize_file(&file, &destination, move_file).unwrap();
-            tx.send(()).unwrap();
-        })
+        // let tx = tx.clone();
+        // let destination = destination.clone();
+        // let move_file = move_file.clone();
+        // pool.execute(move || {
+        organize_file(&file, &destination, move_file).unwrap();
+        //     tx.send(()).unwrap();
+        // })
     }
 
-    for _ in 0..n_jobs {
-        rc.recv().unwrap();
-    }
+    // for _ in 0..n_jobs {
+    //     rc.recv().unwrap();
+    // }
 }
